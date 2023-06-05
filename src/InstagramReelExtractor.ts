@@ -14,7 +14,7 @@ export const InstagramReelExtractorMiddleware = async (ctx: Context, next: NextF
     if(!ctx.message?.text) return await next();
     if(!ctx.message.text.includes("instagram.com/reel")) return await next();
 
-    let res = /instagram\.com\/reel\/(\w*)\/?/.exec(ctx.message.text);
+    let res = /instagram\.com\/reel\/([\w_-]*)\/?/.exec(ctx.message.text);
     if(!res || !res[1]) return await next();
 
     let author = await ctx.getAuthor();
