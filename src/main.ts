@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Bot } from "grammy";
+import { Bot, GrammyError, HttpError } from "grammy";
 
 import { BOTCommand } from "./Commands/BOTCommand";
 import { CommandsManager } from "./CommandsManager";
@@ -8,6 +8,7 @@ import { Help } from "./Commands/Help";
 import { Start } from "./Commands/Start";
 import { WhoAmI } from "./Commands/WhoAmI";
 import { TikTokExtractorMiddleware } from "./TikTokExtractor";
+import { InstagramReelExtractorMiddleware } from "./InstagramReelExtractor";
 
 declare global {
     namespace NodeJS {
@@ -21,6 +22,22 @@ declare global {
 
 const bot = new Bot(process.env.TOKEN);
 const cmdMgr = new CommandsManager(bot);
+
+bot.catch((err) => {
+    const ctx = err.ctx;
+    console.error(`Error while handling update ${ctx.update.update_id}:`);
+    const e = err.error;
+    if (e instanceof GrammyError) {
+        console.error("Error in request:", e.description);
+    } else if (e instanceof HttpError) {
+        console.error("Could not contact Telegram:", e);
+    } else {
+        console.error("Unknown error:", e);
+    }
+});
+
+bot.on("::url", TikTokExtractorMiddleware)
+bot.on("::url", InstagramReelExtractorMiddleware);
 
 //Custom Commands definition
 const COMMANDS: BOTCommand[] = [
@@ -47,6 +64,4 @@ const COMMANDS: BOTCommand[] = [
     })));
 
     console.log("BOT is Ready.");
-
-    bot.on("::url", TikTokExtractorMiddleware);
 })();
