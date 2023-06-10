@@ -15,7 +15,8 @@
     "got": "^11.8.6",
     "grammy": "^1.16.1",
     "hpagent": "^1.2.0",
-    "telegram-format": "^2.1.0"
+    "telegram-format": "^2.1.0",
+    "ytdl-core": "^4.11.4"
   },
   "devDependencies": {
     "typescript": "^5.1.3"

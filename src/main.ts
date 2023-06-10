@@ -9,6 +9,7 @@ import { Start } from "./Commands/Start";
 import { WhoAmI } from "./Commands/WhoAmI";
 import { TikTokExtractorMiddleware } from "./TikTokExtractor";
 import { InstagramReelExtractorMiddleware } from "./InstagramReelExtractor";
+import { YouTubeShortExtractorMiddleware } from "./YouTubeShortExtractor";
 
 declare global {
     namespace NodeJS {
@@ -38,6 +39,7 @@ bot.catch((err) => {
 
 bot.on("::url", TikTokExtractorMiddleware)
 bot.on("::url", InstagramReelExtractorMiddleware);
+bot.on("::url", YouTubeShortExtractorMiddleware);
 
 //Custom Commands definition
 const COMMANDS: BOTCommand[] = [
