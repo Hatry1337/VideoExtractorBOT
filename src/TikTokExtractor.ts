@@ -32,18 +32,23 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
 
     let videoUrl: string;
 
-    if(ctx.message.text.includes("vm.tiktok.com") || ctx.message.text.includes("vt.tiktok.com")) {
-        let res = /v[mt]\.tiktok\.com\/(\w*)\/?/.exec(ctx.message.text);
+    if(ctx.message.text.includes("tiktok.com")) {
+        if(ctx.message.text.includes("/video/")) {
+            let res =   /(?:www\.)?tiktok\.com\/.*\/(\w*)\/?/.exec(ctx.message.text);
+            if(!res || !res[1]) return await next();
+            videoUrl = "https://" + res[0];
+        } else {
+            let res =   /v[mt]\.tiktok\.com\/(\w*)\/?/.exec(ctx.message.text) ||
+                        /tiktok\.com\/t\/(\w*)\/?/.exec(ctx.message.text);
 
-        if(!res || !res[1]) return await next();
+            if(!res || !res[1]) return await next();
 
-        videoUrl = (await got(`https://vm.tiktok.com/${res[1]}/`, {
-            headers: {
-                "User-Agent": "TikTok 26.2.0 rv:262018 (iPhone; iOS 14.4.2; en_US) Cronet"
-            }
-        })).url;
-    } else if(ctx.message.text.includes("/video/")) {
-        videoUrl = ctx.message.text;
+            videoUrl = (await got(`https://vm.tiktok.com/${res[1]}/`, {
+                headers: {
+                    "User-Agent": "TikTok 26.2.0 rv:262018 (iPhone; iOS 14.4.2; en_US) Cronet"
+                }
+            })).url;
+        }
     } else {
         return await next();
     }
