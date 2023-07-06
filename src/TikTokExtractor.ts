@@ -2,12 +2,20 @@ import { Context, InputFile, NextFunction } from "grammy";
 import got from "got";
 import { HttpsProxyAgent } from "hpagent";
 import { SendVideoMiddleware } from "./SendVideoMiddleware";
+import {InputMediaAudio, InputMediaPhoto} from "grammy/out/types.node";
 
 const tiktok_api_url = "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=";
+
+enum TikTokAwemeType {
+    VIDEO_REGULAR = 0,
+    IMAGES_MULTIPLE = 150
+}
 
 interface TikTokVideoInfoResponse {
     aweme_list: {
         aweme_id: string;
+        aweme_type: TikTokAwemeType;
+
         desk: string;
         create_time: number;
         author: {
@@ -23,6 +31,14 @@ interface TikTokVideoInfoResponse {
                 uri: string;
                 url_list: string[];
             }
+        }
+        image_post_info: {
+            images: {
+                display_image: {
+                    uri: string;
+                    url_list: string[];
+                }
+            }[];
         }
     }[];
 }
@@ -79,6 +95,22 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
         return await ctx.reply("Sorry, I can't extract this video ;(\nSeems like region restriction.", {
             reply_to_message_id: ctx.message.message_id
         });
+    }
+
+    if(video_info.aweme_list[0].aweme_type === TikTokAwemeType.IMAGES_MULTIPLE) {
+        let images: InputMediaPhoto[] = video_info.aweme_list[0].image_post_info.images.map(i => ({
+            type: "photo",
+            media: i.display_image.url_list[0]
+        }));
+
+        let imgMessage = await ctx.replyWithMediaGroup(images, {
+            reply_to_message_id: ctx.message?.message_id
+        });
+
+        await ctx.replyWithAudio(video_info.aweme_list[0].video.play_addr.url_list[0], {
+            reply_to_message_id: imgMessage[0].message_id
+        });
+        return;
     }
 
     return await SendVideoMiddleware(ctx, next, video_info.aweme_list[0].video.play_addr.url_list[0]);
