@@ -1,15 +1,15 @@
 import "dotenv/config";
 import { Bot, GrammyError, HttpError } from "grammy";
 
-import { BOTCommand } from "./Commands/BOTCommand";
-import { CommandsManager } from "./CommandsManager";
+import { BOTCommand } from "./Commands/BOTCommand.js";
+import { CommandsManager } from "./CommandsManager.js";
 
-import { Help } from "./Commands/Help";
-import { Start } from "./Commands/Start";
-import { WhoAmI } from "./Commands/WhoAmI";
-import { TikTokExtractorMiddleware } from "./TikTokExtractor";
-import { InstagramReelExtractorMiddleware } from "./InstagramReelExtractor";
-import { YouTubeShortExtractorMiddleware } from "./YouTubeShortExtractor";
+import { Help } from "./Commands/Help.js";
+import { Start } from "./Commands/Start.js";
+import { WhoAmI } from "./Commands/WhoAmI.js";
+import { TikTokExtractorMiddleware } from "./TikTokExtractor.js";
+import { InstagramReelExtractorMiddleware } from "./InstagramReelExtractor.js";
+import { YouTubeShortExtractorMiddleware } from "./YouTubeShortExtractor.js";
 
 declare global {
     namespace NodeJS {

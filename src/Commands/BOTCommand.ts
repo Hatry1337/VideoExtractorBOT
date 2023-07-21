@@ -1,6 +1,6 @@
 import { CommandContext, Context } from "grammy";
-import { ChatMember } from "grammy/out/types.node";
-import { CommandsManager } from "../CommandsManager";
+import { ChatMember } from "@grammyjs/types";
+import { CommandsManager } from "../CommandsManager.js";
 
 export abstract class BOTCommand {
     public abstract name: string;

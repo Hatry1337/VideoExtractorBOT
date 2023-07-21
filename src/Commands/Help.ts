@@ -1,6 +1,6 @@
 import { CommandContext, Context } from "grammy";
-import { ChatMember } from "grammy/out/types.node";
-import { BOTCommand } from "./BOTCommand";
+import { BOTCommand } from "./BOTCommand.js";
+import {ChatMember} from "@grammyjs/types";
 
 export class Help extends BOTCommand {
     public name: string = "help";

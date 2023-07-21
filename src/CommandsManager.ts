@@ -1,5 +1,5 @@
 import { Bot } from "grammy";
-import { BOTCommand } from "./Commands/BOTCommand";
+import { BOTCommand } from "./Commands/BOTCommand.js";
 
 export class CommandsManager {
     public commands: BOTCommand[] = [];

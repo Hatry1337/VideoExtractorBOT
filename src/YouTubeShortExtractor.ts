@@ -1,6 +1,6 @@
 import { Context, NextFunction } from "grammy";
-import { filterFormats, getInfo, validateID } from "ytdl-core";
-import { SendVideoMiddleware } from "./SendVideoMiddleware";
+import ytdl from "ytdl-core";
+import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
 
 export const YouTubeShortExtractorMiddleware = async (ctx: Context, next: NextFunction) => {
     if(!ctx.message?.text) return await next();
@@ -12,12 +12,12 @@ export const YouTubeShortExtractorMiddleware = async (ctx: Context, next: NextFu
     let author = await ctx.getAuthor();
     console.log(`[YouTubeShortExtractor] User @${author.user.username} (${author.user.id}) requested video extraction: https://youtube.com/shorts/${res[1]}.`);
 
-    if(!validateID(res[1])) {
+    if(!ytdl.validateID(res[1])) {
         console.log(`[YouTubeShortExtractor] https://youtube.com/shorts/${res[1]} is not valid youtube video.`);
         return await next();
     }
 
-    let videoInfo = await getInfo("https://youtube.com/shorts/" + res[1]);
+    let videoInfo = await ytdl.getInfo("https://youtube.com/shorts/" + res[1]);
 
     let videos = videoInfo.formats.filter(f => f.container === "mp4" && f.hasVideo && f.hasAudio);
     let url = videos.find(f => f.qualityLabel === "720p" || f.qualityLabel === "720p60")?.url ?? videos[0].url;

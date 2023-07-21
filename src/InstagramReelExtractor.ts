@@ -1,6 +1,8 @@
 import { Context, NextFunction } from "grammy";
 import got from "got";
-import { SendVideoMiddleware } from "./SendVideoMiddleware";
+import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
+import { CookieJar } from "tough-cookie";
+import randomUseragent from "random-useragent";
 
 interface InstaSaveAPIResponse {
     status: string;
@@ -8,7 +10,8 @@ interface InstaSaveAPIResponse {
     data: string;
 }
 
-const BASE_URL = "https://igdownloader.app";
+const BASE_DOMAIN = "igdownloader.app";
+const BASE_URL = "https://" + BASE_DOMAIN;
 
 export const InstagramReelExtractorMiddleware = async (ctx: Context, next: NextFunction) => {
     if(!ctx.message?.text) return await next();
@@ -20,20 +23,28 @@ export const InstagramReelExtractorMiddleware = async (ctx: Context, next: NextF
     let author = await ctx.getAuthor();
     console.log(`[InstagramReelExtractor] User @${author.user.username} (${author.user.id}) requested video extraction: https://instagram.com/reel/${res[1]}.`);
 
+    const headers = {
+        'Origin': BASE_URL,
+        'Host': BASE_DOMAIN,
+        'Referer': BASE_URL + "/en/",
+        'Sec-Fetch-Dest': 'empty',
+        'Sec-Fetch-Mode': 'cors',
+        'Sec-Fetch-Site': 'same-origin',
+        'User-Agent': randomUseragent.getRandom(),
+    }
+
+    //obtain cookies
+    let jar = new CookieJar();
+    await got(BASE_URL + "/en/", { cookieJar: jar, headers });
+
     let data = JSON.parse((await got(BASE_URL + "/api/ajaxSearch", {
         method: "POST",
+        cookieJar: jar,
         form: {
             q: "https://instagram.com/reel/" + res[1],
             t: "media"
         },
-        headers: {
-            'Origin': BASE_URL,
-            'Referer': BASE_URL + "/en/",
-            'Sec-Fetch-Dest': 'empty',
-            'Sec-Fetch-Mode': 'cors',
-            'Sec-Fetch-Site': 'same-origin',
-            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9',
-        }
+        headers
     })).body) as InstaSaveAPIResponse;
 
     let linkStart = data.data.indexOf("https://download");
