@@ -39,9 +39,12 @@ class AnimationController {
 
         const maxFrames = Math.floor(this.fps * duration / 1000);
 
+        ctx2d.fillStyle = "rgba(0, 0, 0, 0.1)";
+
         for(let frame = 0; frame <= maxFrames; frame++) {
             let dx = this.canvas.width - (Math.sin((frame / maxFrames) * Math.PI / 2) * this.canvas.width);
 
+            ctx2d.fillRect(0, 0, this.canvas.width, this.canvas.height);
             ctx2d.drawImage(image, dx, 0);
             await this.saveFrame();
         }
