@@ -3,6 +3,7 @@ import got from "got";
 import { HttpsProxyAgent } from "hpagent";
 import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
 import {ImageSequenceAnimationMiddleware} from "./ImageSequenceAnimationMiddleware.js";
+import { InputMediaPhoto } from "grammy/types";
 
 const tiktok_api_url = "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=";
 
@@ -98,6 +99,7 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
     if(video_info.aweme_list[0].aweme_type === TikTokAwemeType.IMAGES_MULTIPLE) {
         let images = video_info.aweme_list[0].image_post_info.images.map(i => i.display_image.url_list[0]);
 
+        /*
         console.log(images);
 
         return await ImageSequenceAnimationMiddleware(ctx, next, {
@@ -105,14 +107,15 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
             width: video_info.aweme_list[0].image_post_info.images[0].display_image.width,
             height: video_info.aweme_list[0].image_post_info.images[0].display_image.height
         });
+        */
 
-        /*
-        let images: InputMediaPhoto[] = video_info.aweme_list[0].image_post_info.images.map(i => ({
+
+        let imagesTg: InputMediaPhoto[] = images.map(i => ({
             type: "photo",
-            media: i.display_image.url_list[0]
+            media: i
         }));
 
-        let imgMessage = await ctx.replyWithMediaGroup(images, {
+        let imgMessage = await ctx.replyWithMediaGroup(imagesTg, {
             reply_to_message_id: ctx.message?.message_id
         });
 
@@ -120,7 +123,6 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
             reply_to_message_id: imgMessage[0].message_id
         });
         return;
-         */
     }
 
     return await SendVideoMiddleware(ctx, next, video_info.aweme_list[0].video.play_addr.url_list[0]);
