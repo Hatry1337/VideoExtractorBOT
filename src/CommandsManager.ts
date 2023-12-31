@@ -16,4 +16,14 @@ export class CommandsManager {
         });
         this.commands.push(cmd);
     }
+
+    public async init() {
+        for(let c of this.commands) {
+            if(c.init) {
+                console.log("Initializing " + c.name + " command...");
+                await c.init();
+                console.log("Command " + c.name + " initialized.");
+            }
+        }
+    }
 }

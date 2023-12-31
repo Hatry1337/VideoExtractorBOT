@@ -9,4 +9,5 @@ export abstract class BOTCommand {
     public manager!: CommandsManager;
 
     public abstract callbackFn(ctx: CommandContext<Context>, author: ChatMember): Promise<void>;
+    public abstract init?(): Promise<void>;
 }

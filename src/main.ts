@@ -10,6 +10,7 @@ import { WhoAmI } from "./Commands/WhoAmI.js";
 import { TikTokExtractorMiddleware } from "./TikTokExtractor.js";
 import { InstagramReelExtractorMiddleware } from "./InstagramReelExtractor.js";
 import { YouTubeShortExtractorMiddleware } from "./YouTubeShortExtractor.js";
+import {HappyNewYear} from "./Commands/HappyNewYear.js";
 
 declare global {
     namespace NodeJS {
@@ -46,6 +47,7 @@ const COMMANDS: BOTCommand[] = [
     new Help(),
     new Start(),
     new WhoAmI(),
+    new HappyNewYear()
 ];
 //===============================================//
 
@@ -66,4 +68,7 @@ const COMMANDS: BOTCommand[] = [
     })));
 
     console.log("BOT is Ready.");
+
+    console.log("Initializing commands...");
+    await cmdMgr.init();
 })();
