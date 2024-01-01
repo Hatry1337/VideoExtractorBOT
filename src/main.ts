@@ -47,7 +47,6 @@ const COMMANDS: BOTCommand[] = [
     new Help(),
     new Start(),
     new WhoAmI(),
-    new HappyNewYear()
 ];
 //===============================================//
 
