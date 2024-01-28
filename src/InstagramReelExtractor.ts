@@ -59,5 +59,6 @@ export const InstagramReelExtractorMiddleware = async (ctx: Context, next: NextF
 
     let link = data.data.substring(linkStart, linkEnd);
 
-    return await SendVideoMiddleware(ctx, next, link);
+    // #FIXME replace undefined thumbnail with something
+    return await SendVideoMiddleware(ctx, next, link, undefined);
 }

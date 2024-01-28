@@ -38,6 +38,10 @@ bot.catch((err) => {
     }
 });
 
+bot.on("inline_query", TikTokExtractorMiddleware);
+bot.on("inline_query", InstagramReelExtractorMiddleware);
+bot.on("inline_query", YouTubeShortExtractorMiddleware);
+
 bot.on("::url", TikTokExtractorMiddleware)
 bot.on("::url", InstagramReelExtractorMiddleware);
 bot.on("::url", YouTubeShortExtractorMiddleware);
@@ -70,4 +74,5 @@ const COMMANDS: BOTCommand[] = [
 
     console.log("Initializing commands...");
     await cmdMgr.init();
+    console.log("Commands initialized!");
 })();
