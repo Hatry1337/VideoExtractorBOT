@@ -1,8 +1,7 @@
 import { Context, InputFile, NextFunction } from "grammy";
-import got from "got";
+import fetch, { RequestInit } from 'node-fetch';
 import { HttpsProxyAgent } from "hpagent";
 import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
-import {ImageSequenceAnimationMiddleware} from "./ImageSequenceAnimationMiddleware.js";
 import { InputMediaPhoto } from "grammy/types";
 
 const tiktok_api_url = "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=";
@@ -52,49 +51,68 @@ interface TikTokVideoInfoResponse {
     }[];
 }
 
+class TikTokExtractor {
+    public constructor() {
+
+    }
+
+    public static async extractVideoURL(text: string, reqConfig?: RequestInit): Promise<string | undefined> {
+        if(text.includes("video")) {
+            let res = /(?:www\.)?tiktok\.com\/.*\/video\/(\w*)\/?/.exec(text);
+            if(!res || !res[1]) return;
+
+            return "https://" + res[0];
+        } else {
+            let res = /(?:v[mt]|www)\.tiktok\.com\/?t?\/(\w*)\/?/.exec(text);
+            if(!res || !res[1]) return;
+
+            return (await fetch(`https://vm.tiktok.com/${res[1]}/`, reqConfig)).url;
+        }
+    }
+
+    public static getRequestConfig(extras?: RequestInit): RequestInit {
+        let agent: HttpsProxyAgent | undefined;
+        if(process.env.PROXY) {
+            agent = new HttpsProxyAgent({
+                proxy: process.env.PROXY
+            });
+        }
+
+        return Object.assign({
+            agent,
+            headers: {
+                "User-Agent": "TikTok 26.2.0 rv:262018 (iPhone; iOS 14.4.2; en_US) Cronet"
+            }
+        }, extras);
+    }
+
+    public static getVideoId(url: string): string {
+        let idVideo = url.substring(url.indexOf("/video/") + 7, url.length);
+        return (idVideo.length > 19) ? idVideo.substring(0, idVideo.indexOf("?")) : idVideo;
+    }
+
+    public static async getVideoInfo(id: string): Promise<TikTokVideoInfoResponse> {
+        let response = await fetch(tiktok_api_url + id, TikTokExtractor.getRequestConfig());
+        return await response.json() as TikTokVideoInfoResponse;
+    }
+}
+
 export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction) => {
     if(!ctx.message?.text) return await next();
+    if(!ctx.message.text.includes("tiktok.com")) return;
 
-    let proxy_agent: HttpsProxyAgent | undefined;
-    if(process.env.PROXY) {
-        proxy_agent = new HttpsProxyAgent({
-            proxy: process.env.PROXY
-        });
-    }
+    let videoUrl: string | undefined = await TikTokExtractor.extractVideoURL(ctx.message.text, TikTokExtractor.getRequestConfig());
 
-    let gotOptions = {
-        agent: proxy_agent ? { https: proxy_agent } : undefined,
-        headers: {
-            "User-Agent": "TikTok 26.2.0 rv:262018 (iPhone; iOS 14.4.2; en_US) Cronet"
-        }
-    }
-
-    let videoUrl: string;
-
-    if(ctx.message.text.includes("tiktok.com")) {
-        if(ctx.message.text.includes("/video/")) {
-            let res =   /(?:www\.)?tiktok\.com\/.*\/(\w*)\/?/.exec(ctx.message.text);
-            if(!res || !res[1]) return await next();
-            videoUrl = "https://" + res[0];
-        } else {
-            let res =   /v[mt]\.tiktok\.com\/(\w*)\/?/.exec(ctx.message.text) ||
-                        /tiktok\.com\/t\/(\w*)\/?/.exec(ctx.message.text);
-
-            if(!res || !res[1]) return await next();
-
-            videoUrl = (await got(`https://vm.tiktok.com/${res[1]}/`, gotOptions)).url;
-        }
-    } else {
-        return await next();
+    if(!videoUrl) {
+        console.log(`Failed to extract video url from input '${ctx.message.text}'`);
+        return;
     }
 
     let author = await ctx.getAuthor();
     console.log(`[TikTokExtractor] User @${author.user.username} (${author.user.id}) requested video extraction: ${videoUrl}.`);
 
-    let idVideo = videoUrl.substring(videoUrl.indexOf("/video/") + 7, videoUrl.length);
-    idVideo = (idVideo.length > 19) ? idVideo.substring(0, idVideo.indexOf("?")) : idVideo;
-
-    let video_info = JSON.parse((await got(tiktok_api_url + idVideo, gotOptions)).body) as TikTokVideoInfoResponse;
+    let idVideo = TikTokExtractor.getVideoId(videoUrl);
+    let video_info = await TikTokExtractor.getVideoInfo(idVideo);
 
     if(idVideo !== video_info.aweme_list[0].aweme_id) {
         return await ctx.reply("Sorry, I can't extract this video ;(\nSeems like region restriction.", {
