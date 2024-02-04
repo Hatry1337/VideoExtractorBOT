@@ -1,6 +1,7 @@
 import { Context, InlineQueryResultBuilder, InputFile, NextFunction } from "grammy";
-import got from "got";
+import fetch from "node-fetch";
 import * as crypto from "crypto";
+import ProxySettings from "./ProxySettings.js";
 
 export const SendVideoMiddleware = async (ctx: Context, next: NextFunction, videoUrl: string | undefined, thumbnail: string | undefined) => {
     if(!videoUrl) return await next();
@@ -25,7 +26,8 @@ export const SendVideoMiddleware = async (ctx: Context, next: NextFunction, vide
         console.log(`[SendVideo] Can't directly send video ${videoUrl}. Reuploading...`);
     }
 
-    let video = got.stream(videoUrl, {
+    let res = await fetch(videoUrl, {
+        agent: ProxySettings.getProxyAgent(),
         headers: {
             "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_2) AppleWebKit/601.3.9 (KHTML, like Gecko) Version/9.0.2 Safari/601.3.9"
         }

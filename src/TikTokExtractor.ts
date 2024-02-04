@@ -71,12 +71,7 @@ class TikTokExtractor {
     }
 
     public static getRequestConfig(extras?: RequestInit): RequestInit {
-        let agent: HttpsProxyAgent | undefined;
-        if(process.env.PROXY) {
-            agent = new HttpsProxyAgent({
-                proxy: process.env.PROXY
-            });
-        }
+
 
         return Object.assign({
             agent,
@@ -149,5 +144,10 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
         return;
     }
 
-    return await SendVideoMiddleware(ctx, next, video_info.aweme_list[0].video.play_addr.url_list[0], video_info.aweme_list[0].video.cover.url_list[0]);
+    return await SendVideoMiddleware(
+        ctx,
+        next,
+        video_info.aweme_list[0].video.play_addr.url_list[0],
+        video_info.aweme_list[0].video.cover.url_list[0]
+    );
 }
