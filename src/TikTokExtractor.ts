@@ -1,9 +1,10 @@
-import { Context, InputFile, NextFunction } from "grammy";
+import { Context, Filter, NextFunction } from "grammy";
 import got from "got";
 import { HttpsProxyAgent } from "hpagent";
 import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
 import {ImageSequenceAnimationMiddleware} from "./ImageSequenceAnimationMiddleware.js";
 import { InputMediaPhoto } from "grammy/types";
+import { performFeedback } from "./PerformFeedback.js";
 
 const tiktok_api_url = "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=";
 
@@ -46,7 +47,7 @@ interface TikTokVideoInfoResponse {
     }[];
 }
 
-export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction) => {
+export const TikTokExtractorMiddleware = async (ctx: Filter<Context, "::url">, next: NextFunction) => {
     if(!ctx.message?.text) return await next();
 
     let proxy_agent: HttpsProxyAgent | undefined;
@@ -84,6 +85,8 @@ export const TikTokExtractorMiddleware = async (ctx: Context, next: NextFunction
 
     let author = await ctx.getAuthor();
     console.log(`[TikTokExtractor] User @${author.user.username} (${author.user.id}) requested video extraction: ${videoUrl}.`);
+
+    performFeedback(ctx);
 
     let idVideo = videoUrl.substring(videoUrl.indexOf("/video/") + 7, videoUrl.length);
     idVideo = (idVideo.length > 19) ? idVideo.substring(0, idVideo.indexOf("?")) : idVideo;

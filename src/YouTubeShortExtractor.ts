@@ -1,8 +1,9 @@
-import { Context, NextFunction } from "grammy";
+import { Context, Filter, NextFunction } from "grammy";
 import ytdl from "ytdl-core";
 import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
+import { performFeedback } from "./PerformFeedback.js";
 
-export const YouTubeShortExtractorMiddleware = async (ctx: Context, next: NextFunction) => {
+export const YouTubeShortExtractorMiddleware = async (ctx: Filter<Context, "::url">, next: NextFunction) => {
     if(!ctx.message?.text) return await next();
     if(!ctx.message.text.includes("youtube.com/shorts/")) return await next();
 
@@ -16,6 +17,8 @@ export const YouTubeShortExtractorMiddleware = async (ctx: Context, next: NextFu
         console.log(`[YouTubeShortExtractor] https://youtube.com/shorts/${res[1]} is not valid youtube video.`);
         return await next();
     }
+
+    performFeedback(ctx);
 
     let videoInfo = await ytdl.getInfo("https://youtube.com/shorts/" + res[1]);
 

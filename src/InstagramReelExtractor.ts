@@ -1,8 +1,9 @@
-import { Context, NextFunction } from "grammy";
+import { Context, Filter, NextFunction } from "grammy";
 import got from "got";
 import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
 import { CookieJar } from "tough-cookie";
 import randomUseragent from "random-useragent";
+import { performFeedback } from "./PerformFeedback.js";
 
 interface InstaSaveAPIResponse {
     status: string;
@@ -13,7 +14,7 @@ interface InstaSaveAPIResponse {
 const BASE_DOMAIN = "igdownloader.app";
 const BASE_URL = "https://" + BASE_DOMAIN;
 
-export const InstagramReelExtractorMiddleware = async (ctx: Context, next: NextFunction) => {
+export const InstagramReelExtractorMiddleware = async (ctx: Filter<Context, "::url">, next: NextFunction) => {
     if(!ctx.message?.text) return await next();
     if(!ctx.message.text.includes("instagram.com/reel")) return await next();
 
@@ -22,6 +23,8 @@ export const InstagramReelExtractorMiddleware = async (ctx: Context, next: NextF
 
     let author = await ctx.getAuthor();
     console.log(`[InstagramReelExtractor] User @${author.user.username} (${author.user.id}) requested video extraction: https://instagram.com/reel/${res[1]}.`);
+
+    performFeedback(ctx);
 
     const headers = {
         'Origin': BASE_URL,
