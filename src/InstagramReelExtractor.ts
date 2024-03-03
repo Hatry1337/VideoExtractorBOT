@@ -4,6 +4,7 @@ import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
 import { CookieJar } from "tough-cookie";
 import randomUseragent from "random-useragent";
 import { performFeedback } from "./PerformFeedback.js";
+import { HttpsProxyAgent } from "hpagent";
 
 const BASE_DOMAIN = "www.instagram.com";
 const BASE_URL = "https://" + BASE_DOMAIN;
@@ -24,6 +25,19 @@ export const InstagramReelExtractorMiddleware = async (ctx: Filter<Context, "::u
 
     const userAgent = randomUseragent.getRandom();
 
+    let jar = new CookieJar();
+    let proxy_agent: HttpsProxyAgent | undefined;
+    if(process.env.PROXY) {
+        proxy_agent = new HttpsProxyAgent({
+            proxy: process.env.PROXY
+        });
+    }
+
+    let gotOptions = {
+        agent: proxy_agent ? { https: proxy_agent } : undefined,
+        cookieJar: jar
+    }
+
     const headersBase = {
         "Host": BASE_DOMAIN,
         "User-Agent": userAgent,
@@ -31,8 +45,10 @@ export const InstagramReelExtractorMiddleware = async (ctx: Filter<Context, "::u
     }
 
     //obtain cookies
-    let jar = new CookieJar();
-    await got(BASE_URL + "/reel/" + res[1], { cookieJar: jar, headers: headersBase });
+    await got(BASE_URL + "/reel/" + res[1], {
+        headers: headersBase,
+        ...gotOptions
+    });
 
     const headersApi = {
         "Host": BASE_DOMAIN,
@@ -98,9 +114,9 @@ export const InstagramReelExtractorMiddleware = async (ctx: Filter<Context, "::u
 
     let response = await got(GRAPH_QL_API, {
         method: "POST",
-        cookieJar: jar,
         form: postData,
         headers: headersApi,
+        ...gotOptions
     });
 
     let link = JSON.parse(response.body).data.xdt_shortcode_media.video_url;
