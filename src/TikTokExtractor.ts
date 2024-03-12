@@ -88,10 +88,21 @@ export const TikTokExtractorMiddleware = async (ctx: Filter<Context, "::url">, n
 
     performFeedback(ctx);
 
-    let idVideo = videoUrl.substring(videoUrl.indexOf("/video/") + 7, videoUrl.length);
+    let typeIndex = videoUrl.indexOf("/video/");
+    if(typeIndex === -1) {
+        typeIndex = videoUrl.indexOf("/photo/");
+    }
+    if(typeIndex === -1) {
+        console.log(`Failed to extract video id from URL: ${videoUrl}`);
+        return await next();
+    }
+
+    let idVideo = videoUrl.substring(typeIndex + 7, videoUrl.length);
     idVideo = (idVideo.length > 19) ? idVideo.substring(0, idVideo.indexOf("?")) : idVideo;
 
     let video_info = JSON.parse((await got(tiktok_api_url + idVideo, gotOptions)).body) as TikTokVideoInfoResponse;
+
+    console.log(`target: ${idVideo}, found: ${video_info.aweme_list[0].aweme_id}, found_link: ${video_info.aweme_list[0].video.play_addr.url_list[0]}`);
 
     if(idVideo !== video_info.aweme_list[0].aweme_id) {
         return await ctx.reply("Sorry, I can't extract this video ;(\nSeems like region restriction.", {
