@@ -1,11 +1,12 @@
 import { Context, InputFile, NextFunction } from "grammy";
 import got from "got";
-import {Canvas, CanvasLineCap, Image, loadImage} from "canvas";
+import {Canvas, Image, loadImage} from "canvas";
 import * as fs from "fs";
 import sharp from "sharp";
 import {execa} from "execa";
 
 interface ImageSequenceAnimationMiddlewareOptions {
+    animationId: string;
     width: number;
     height: number;
     images: string[];
@@ -14,11 +15,9 @@ interface ImageSequenceAnimationMiddlewareOptions {
 
 class AnimationController {
     public totalFrames: number = 0;
-    public animId: string;
     public canvas: Canvas;
 
-    public constructor(public fps: number, public framesDir: string, width: number, height: number) {
-        this.animId = `c${new Date().getTime()}-r${Math.floor(Math.random() * 10000)}`;
+    public constructor(public animId: string, public fps: number, public framesDir: string, width: number, height: number) {
         this.canvas = new Canvas(width, height);
     }
 
@@ -38,14 +37,32 @@ class AnimationController {
         let ctx2d = this.canvas.getContext("2d");
 
         const maxFrames = Math.floor(this.fps * duration / 1000);
+        const aspectRatio = image.width / image.height;
 
-        ctx2d.fillStyle = "rgba(0, 0, 0, 0.1)";
+        let resizeHeight;
+        let resizeWidth;
+        let topPadding;
+        let leftPadding;
+
+        if(image.height > image.width) {
+            resizeHeight = ctx2d.canvas.height;
+            resizeWidth = aspectRatio * ctx2d.canvas.height;
+            topPadding = 0;
+            leftPadding = (ctx2d.canvas.width - resizeWidth) / 2;
+        } else {
+            resizeWidth = ctx2d.canvas.width;
+            resizeHeight = ctx2d.canvas.height / aspectRatio;
+            topPadding = (ctx2d.canvas.height - resizeHeight) / 2;
+            leftPadding = 0;
+        }
 
         for(let frame = 0; frame <= maxFrames; frame++) {
+            ctx2d.fillStyle = `rgba(0, 0, 0, ${(frame + 1) / maxFrames})`;
+
             let dx = this.canvas.width - (Math.sin((frame / maxFrames) * Math.PI / 2) * this.canvas.width);
 
             ctx2d.fillRect(0, 0, this.canvas.width, this.canvas.height);
-            ctx2d.drawImage(image, dx, 0);
+            ctx2d.drawImage(image, leftPadding + dx, topPadding, resizeWidth, resizeHeight);
             await this.saveFrame();
         }
     }
@@ -60,7 +77,7 @@ class AnimationController {
         }
     }
 
-    public async render() {
+    public async render(audioName?: string) {
         await execa(
             "ffmpeg",
             [
@@ -69,6 +86,12 @@ class AnimationController {
                 String(this.fps),
                 "-i",
                 `./${this.animId}-f%d.png`,
+                audioName ? "-i" : "",
+                audioName ? `./${audioName}` : "",
+                audioName ? "-map": "",
+                audioName ? "1:a" : "",
+                audioName ? "-map": "",
+                audioName ? "0:v" : "",
                 "-c:v",
                 "libx264",
                 this.animId + ".mp4",
@@ -83,7 +106,17 @@ class AnimationController {
 export const ImageSequenceAnimationMiddleware = async (ctx: Context, next: NextFunction, options: ImageSequenceAnimationMiddlewareOptions | undefined) => {
     if(!options || options.images.length === 0) return await next();
 
-    let animation = new AnimationController(30,"./tmp", options.width, options.height);
+    const tempDir = "./tmp";
+
+    let existingPath = tempDir + options.animationId + ".mp4";
+    if(fs.existsSync(existingPath)) {
+        await ctx.replyWithVideo(new InputFile(existingPath), {
+            reply_to_message_id: ctx.message?.message_id
+        });
+        return;
+    }
+
+    let animation = new AnimationController(options.animationId, 30, tempDir, options.width, options.height);
 
     for(let url of options.images) {
         let image = await loadImage(await sharp((await got(url)).rawBody).toFormat('png').toBuffer());
@@ -91,7 +124,13 @@ export const ImageSequenceAnimationMiddleware = async (ctx: Context, next: NextF
         await animation.animateIdle(5000);
     }
 
-    let video = await animation.render();
+    let audioFileName;
+    if(options.bgAudioURL) {
+        audioFileName = options.animationId + options.bgAudioURL.substring(options.bgAudioURL.lastIndexOf("."));
+        await fs.promises.writeFile(tempDir + audioFileName, (await got(options.bgAudioURL)).rawBody);
+    }
+
+    let video = await animation.render(audioFileName);
 
     await ctx.replyWithVideo(new InputFile(video), {
         reply_to_message_id: ctx.message?.message_id
@@ -99,6 +138,9 @@ export const ImageSequenceAnimationMiddleware = async (ctx: Context, next: NextF
 
     for(let frame = 1; frame <= animation.totalFrames; frame++) {
         await fs.promises.rm( `${animation.framesDir}/${animation.animId}-f${frame}.png`);
+        if(audioFileName) {
+            await fs.promises.rm( `${animation.framesDir}/${audioFileName}`);
+        }
     }
     return;
 }

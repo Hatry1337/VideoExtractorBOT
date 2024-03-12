@@ -10,6 +10,8 @@ import { WhoAmI } from "./Commands/WhoAmI.js";
 import { TikTokExtractorMiddleware } from "./TikTokExtractor.js";
 import { InstagramReelExtractorMiddleware } from "./InstagramReelExtractor.js";
 import { YouTubeShortExtractorMiddleware } from "./YouTubeShortExtractor.js";
+import { ConfigManager } from "./Config/ConfigManager.js";
+import { UseBetaFeature } from "./Commands/UseBetaFeature.js";
 
 declare global {
     namespace NodeJS {
@@ -46,10 +48,14 @@ const COMMANDS: BOTCommand[] = [
     new Help(),
     new Start(),
     new WhoAmI(),
+    new UseBetaFeature()
 ];
 //===============================================//
 
 (async () => {
+    console.log("Initializing ConfigManager...");
+    await ConfigManager.start();
+
     console.log("Starting BOT..");
     bot.start().catch(e => console.error("BOT Main Loop Error:", e));
 

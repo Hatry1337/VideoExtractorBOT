@@ -5,6 +5,7 @@ import { SendVideoMiddleware } from "./SendVideoMiddleware.js";
 import {ImageSequenceAnimationMiddleware} from "./ImageSequenceAnimationMiddleware.js";
 import { InputMediaPhoto } from "grammy/types";
 import { performFeedback } from "./PerformFeedback.js";
+import { ConfigManager } from "./Config/ConfigManager.js";
 
 const tiktok_api_url = "https://api16-normal-c-useast1a.tiktokv.com/aweme/v1/feed/?aweme_id=";
 
@@ -113,30 +114,31 @@ export const TikTokExtractorMiddleware = async (ctx: Filter<Context, "::url">, n
     if(video_info.aweme_list[0].aweme_type === TikTokAwemeType.IMAGES_MULTIPLE) {
         let images = video_info.aweme_list[0].image_post_info.images.map(i => i.display_image.url_list[0]);
 
-        /*
-        console.log(images);
+        let conf = await ConfigManager.BetaFeatureConfig.getValue("photo_animation") ?? {};
 
-        return await ImageSequenceAnimationMiddleware(ctx, next, {
-            images,
-            width: video_info.aweme_list[0].image_post_info.images[0].display_image.width,
-            height: video_info.aweme_list[0].image_post_info.images[0].display_image.height
-        });
-        */
+        if(conf[ctx.chat.id]) {
+            return await ImageSequenceAnimationMiddleware(ctx, next, {
+                animationId: video_info.aweme_list[0].aweme_id,
+                images,
+                width: video_info.aweme_list[0].image_post_info.images[0].display_image.width,
+                height: video_info.aweme_list[0].image_post_info.images[0].display_image.height,
+                bgAudioURL: video_info.aweme_list[0].video.play_addr.url_list[0]
+            });
+        } else {
+            let imagesTg: InputMediaPhoto[] = images.map(i => ({
+                type: "photo",
+                media: i
+            }));
 
+            let imgMessage = await ctx.replyWithMediaGroup(imagesTg, {
+                reply_to_message_id: ctx.message?.message_id
+            });
 
-        let imagesTg: InputMediaPhoto[] = images.map(i => ({
-            type: "photo",
-            media: i
-        }));
-
-        let imgMessage = await ctx.replyWithMediaGroup(imagesTg, {
-            reply_to_message_id: ctx.message?.message_id
-        });
-
-        await ctx.replyWithAudio(video_info.aweme_list[0].video.play_addr.url_list[0], {
-            reply_to_message_id: imgMessage[0].message_id
-        });
-        return;
+            await ctx.replyWithAudio(video_info.aweme_list[0].video.play_addr.url_list[0], {
+                reply_to_message_id: imgMessage[0].message_id
+            });
+            return;
+        }
     }
 
     return await SendVideoMiddleware(ctx, next, video_info.aweme_list[0].video.play_addr.url_list[0]);
