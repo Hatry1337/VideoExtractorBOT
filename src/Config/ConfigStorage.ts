@@ -8,7 +8,12 @@ export class ConfigStorage<T extends Object | string | number | boolean = Object
     }
 
     private async readConf() {
-        let data = await fs.promises.readFile(this.filePath,{ encoding: "utf8" });
+        let data;
+        try {
+            data = await fs.promises.readFile(this.filePath,{ encoding: "utf8" });
+        } catch (e) {
+            data = "{}";
+        }
         if(data.length === 0) {
             data = "{}";
         }
@@ -22,6 +27,6 @@ export class ConfigStorage<T extends Object | string | number | boolean = Object
     public async setValue(key: string, value: T) {
         let conf = JSON.parse(await this.readConf());
         conf[key] = value;
-        await fs.promises.writeFile(this.filePath, JSON.stringify(conf, undefined, 4));
+        await fs.promises.writeFile(this.filePath, JSON.stringify(conf, undefined, 4), { encoding: "utf8", flag: "w+"});
     }
 }

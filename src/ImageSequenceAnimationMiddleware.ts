@@ -108,7 +108,7 @@ export const ImageSequenceAnimationMiddleware = async (ctx: Context, next: NextF
 
     const tempDir = "./tmp";
 
-    let existingPath = tempDir + options.animationId + ".mp4";
+    let existingPath = tempDir + "/" +  options.animationId + ".mp4";
     if(fs.existsSync(existingPath)) {
         await ctx.replyWithVideo(new InputFile(existingPath), {
             reply_to_message_id: ctx.message?.message_id
@@ -127,7 +127,7 @@ export const ImageSequenceAnimationMiddleware = async (ctx: Context, next: NextF
     let audioFileName;
     if(options.bgAudioURL) {
         audioFileName = options.animationId + options.bgAudioURL.substring(options.bgAudioURL.lastIndexOf("."));
-        await fs.promises.writeFile(tempDir + audioFileName, (await got(options.bgAudioURL)).rawBody);
+        await fs.promises.writeFile(tempDir + "/" + audioFileName, (await got(options.bgAudioURL)).rawBody);
     }
 
     let video = await animation.render(audioFileName);
@@ -138,9 +138,9 @@ export const ImageSequenceAnimationMiddleware = async (ctx: Context, next: NextF
 
     for(let frame = 1; frame <= animation.totalFrames; frame++) {
         await fs.promises.rm( `${animation.framesDir}/${animation.animId}-f${frame}.png`);
-        if(audioFileName) {
-            await fs.promises.rm( `${animation.framesDir}/${audioFileName}`);
-        }
+    }
+    if(audioFileName) {
+        await fs.promises.rm( `${animation.framesDir}/${audioFileName}`);
     }
     return;
 }
