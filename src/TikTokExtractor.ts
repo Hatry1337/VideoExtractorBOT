@@ -71,8 +71,6 @@ class TikTokExtractor {
     }
 
     public static getRequestConfig(extras?: RequestInit): RequestInit {
-
-
         return Object.assign({
             agent,
             headers: {
